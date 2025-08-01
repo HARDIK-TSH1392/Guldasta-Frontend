@@ -18,18 +18,18 @@ api.interceptors.request.use((config) => {
 
 // Reference Data APIs - Updated to use new Bihar-specific endpoints
 export const referenceAPI = {
-  getReligions: () => api.get('/reference/religions'),
-  getStates: () => api.get('/reference/states'),
-  getCategories: (religion) => api.get(`/reference/categories?religion=${encodeURIComponent(religion)}`),
-  getCastes: (religion, category) => api.get(`/reference/castes?religion=${encodeURIComponent(religion)}&category=${encodeURIComponent(category)}`),
-  getPCs: (state = 'Bihar') => api.get(`/reference/pcs?state=${state}`),
-  getACs: (pc) => api.get(`/reference/acs?pc=${encodeURIComponent(pc)}`),
+  getReligions: () => api.get('/api/reference/religions'),
+  getStates: () => api.get('/api/reference/states'),
+  getCategories: (religion) => api.get(`/api/reference/categories?religion=${encodeURIComponent(religion)}`),
+  getCastes: (religion, category) => api.get(`/api/reference/castes?religion=${encodeURIComponent(religion)}&category=${encodeURIComponent(category)}`),
+  getPCs: (state = 'Bihar') => api.get(`/api/reference/pcs?state=${state}`),
+  getACs: (pc) => api.get(`/api/reference/acs?pc=${encodeURIComponent(pc)}`),
 };
 
 // Beneficiary APIs
 export const beneficiaryAPI = {
-  initiate: (beneficiaryData) => api.post('/beneficiaries/initiate', beneficiaryData),
-  getAll: () => api.get('/beneficiaries'),
+  initiate: (beneficiaryData) => api.post('/api/beneficiaries/initiate', beneficiaryData),
+  getAll: () => api.get('/api/beneficiaries'),
 };
 
 export default api;

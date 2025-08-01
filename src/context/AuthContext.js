@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get('/auth/profile');
+      const response = await axios.get('/api/auth/profile');
       setUser(response.data.user);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (phone, otp) => {
     try {
-      const response = await axios.post('/auth/login', { phone, otp });
+      const response = await axios.post('/api/auth/login', { phone, otp });
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     try {
-      const response = await axios.post('/auth/signup', {
+      const response = await axios.post('/api/auth/signup', {
         phone: userData.phone,
         role: userData.role
       });
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put('/auth/profile', profileData);
+      const response = await axios.put('/api/auth/profile', profileData);
       setUser(response.data.user);
       return { success: true, user: response.data.user };
     } catch (error) {
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
 
   const resendOTP = async (phone) => {
     try {
-      const response = await axios.post('/auth/resend-otp', { phone });
+      const response = await axios.post('/api/auth/resend-otp', { phone });
       return { success: true, data: response.data };
     } catch (error) {
       return { 

@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Set up axios defaults
-  const API_BASE_URL = 'http://localhost:8080/api';
+  const API_BASE_URL = 'https://api.voteradhikarpatra.com:8080/api';
   axios.defaults.baseURL = API_BASE_URL;
 
   useEffect(() => {

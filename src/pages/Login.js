@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -15,6 +15,14 @@ const Login = () => {
   
   const { login, resendOTP } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Show message from profile completion
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+    }
+  }, [location.state]);
 
   const handleInputChange = (e) => {
     setFormData({

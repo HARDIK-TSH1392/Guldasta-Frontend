@@ -59,7 +59,7 @@ const Home = () => {
           <Row>
             <Col>
               <h1 className="hero-title fade-in">
-                Welcome to गुलदस्ता
+                Welcome to बिहार अधिकार
               </h1>
               <p className="hero-subtitle slide-in-left">
                 {user ? `Hello ${user.name}, ` : ''}

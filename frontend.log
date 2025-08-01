@@ -2,12 +2,42 @@
 > guldasta-frontend@0.1.0 start
 > react-scripts start
 
-(node:10694) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(node:71645) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:10694) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
-(node:10694) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:71645) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(node:71645) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 Starting the development server...
 
+Compiled successfully!
+
+You can now view guldasta-frontend in the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://172.16.0.215:3000
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+Compiling...
 Compiled with warnings.
 
 [eslint] 
@@ -22,3 +52,56 @@ src/context/AuthContext.js
   Line 31:6:  React Hook useEffect has a missing dependency: 'fetchUserProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 webpack compiled with 1 warning
+Failed to compile.
+
+Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/@pmmmwh/react-refresh-webpack-plugin/client/ReactRefreshEntry.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+WARNING in [eslint] 
+src/context/AuthContext.js
+  Line 31:6:  React Hook useEffect has a missing dependency: 'fetchUserProfile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+ERROR in Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/@pmmmwh/react-refresh-webpack-plugin/client/ReactRefreshEntry.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+
+ERROR in Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack-dev-server/client/index.js?protocol=ws%3A&hostname=0.0.0.0&port=3000&pathname=%2Fws&logging=none&overlay=%7B%22errors%22%3Atrue%2C%22warnings%22%3Afalse%7D&reconnect=10&hot=true&live-reload=true' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+
+ERROR in Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/hot/dev-server.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+
+ERROR in main
+Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/src/index.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+
+ERROR in Child compilation failed:
+Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/html-webpack-plugin/lib/loader.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+ModuleNotFoundError: Module not found: Error: Can't resolve '/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/html-webpack-plugin/lib/loader.js' in '/Users/hardikstark/Desktop/AICC/guldasta-frontend'
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/Compilation.js:2237:28
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:949:13
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:10:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:347:22
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:9:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:532:22
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:167:10
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:769:23
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/neo-async/async.js:2830:7
+    at done (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/neo-async/async.js:2925:13)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/webpack/lib/NormalModuleFactory.js:1216:23
+    at finishWithoutResolve (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:570:11)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:659:14
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:16:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/Resolver.js:720:5
+    at eval (eval at create (/Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)
+    at /Users/hardikstark/Desktop/AICC/guldasta-frontend/node_modules/enhanced-resolve/lib/DirectoryExistsPlugin.js:43:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+
+1 ERROR in child compilations (Use 'stats.children: true' resp. '--stats-children' for more details)
+webpack compiled with 6 errors and 1 warning

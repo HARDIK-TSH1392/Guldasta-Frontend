@@ -14,7 +14,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const { signup } = useAuth();
+  const { signup, login } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -64,12 +64,27 @@ const Signup = () => {
 
     setLoading(true);
     
-    // For now, we'll just navigate to profile setup
-    // In a real app, you'd verify the OTP here
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/profile', { state: { isFirstTime: true, phone: formData.phone, role: formData.role } });
-    }, 1000);
+    try {
+      // Verify OTP by attempting login (which completes the signup process)
+      const result = await login(formData.phone, otp);
+      
+      if (result.success) {
+        // User is now logged in, navigate to profile (routing will handle the rest)
+        navigate('/profile', { 
+          state: { 
+            isFirstTime: true, 
+            phone: formData.phone, 
+            role: formData.role 
+          } 
+        });
+      } else {
+        setError(result.message || 'Invalid OTP. Please try again.');
+      }
+    } catch (error) {
+      setError('Verification failed. Please try again.');
+    }
+    
+    setLoading(false);
   };
 
   const handleResendOTP = async () => {

@@ -16,21 +16,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Reference Data APIs
+// Reference Data APIs - Updated to use new Bihar-specific endpoints
 export const referenceAPI = {
   getReligions: () => api.get('/reference/religions'),
-  getCategories: () => api.get('/reference/categories'),
-  getCastes: (category) => api.get(`/reference/castes?category=${category}`),
-  getSchemes: () => api.get('/reference/schemes'),
-  getPCs: () => api.get('/reference/pcs'),
-  getACs: (pc) => api.get(`/reference/acs?pc=${pc}`),
-  getPanchayats: () => api.get('/reference/panchayats'),
+  getStates: () => api.get('/reference/states'),
+  getCategories: (religion) => api.get(`/reference/categories?religion=${encodeURIComponent(religion)}`),
+  getCastes: (religion, category) => api.get(`/reference/castes?religion=${encodeURIComponent(religion)}&category=${encodeURIComponent(category)}`),
+  getPCs: (state = 'Bihar') => api.get(`/reference/pcs?state=${state}`),
+  getACs: (pc) => api.get(`/reference/acs?pc=${encodeURIComponent(pc)}`),
 };
 
 // Beneficiary APIs
 export const beneficiaryAPI = {
   initiate: (beneficiaryData) => api.post('/beneficiaries/initiate', beneficiaryData),
-  verify: (phone, verificationCode) => api.post('/beneficiaries/verify', { phone, verificationCode }),
   getAll: () => api.get('/beneficiaries'),
 };
 

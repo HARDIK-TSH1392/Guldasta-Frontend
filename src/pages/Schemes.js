@@ -1,93 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
-import { referenceAPI, beneficiaryAPI } from '../services/api';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { beneficiaryAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
 
 const Schemes = () => {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: '',
     age: '',
+    gender: '',
     phone: '',
     religion: '',
     category: '',
     caste: '',
-    schemes: [],
-    leaderMobile: ''
+    voterIdHelp: false,
+    congressWork: false,
+    leaderMobile: user?.leaderPhone || ''
   });
 
-  const [referenceData, setReferenceData] = useState({
-    religions: [],
-    categories: [],
-    castes: [],
-    schemes: []
-  });
+  const [referenceData, setReferenceData] = useState({});
+
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [casteOptions, setCasteOptions] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  // OTP Modal state
-  const [showOTPModal, setShowOTPModal] = useState(false);
-  const [otp, setOtp] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
-    loadReferenceData();
+    // No reference data loading needed anymore
   }, []);
 
-  const loadReferenceData = async () => {
-    try {
-      const [religionsRes, categoriesRes, schemesRes] = await Promise.all([
-        referenceAPI.getReligions(),
-        referenceAPI.getCategories(),
-        referenceAPI.getSchemes()
-      ]);
-
-      setReferenceData(prev => ({
+  // Update leaderMobile when user data is available
+  useEffect(() => {
+    if (user?.leaderPhone) {
+      setFormData(prev => ({
         ...prev,
-        religions: religionsRes.data,
-        categories: categoriesRes.data,
-        schemes: schemesRes.data
+        leaderMobile: user.leaderPhone
       }));
-    } catch (error) {
-      console.error('Error loading reference data:', error);
-      setError('Failed to load form data');
     }
-  };
+  }, [user]);
 
-  const handleInputChange = async (e) => {
+  // Update categories when religion changes
+  useEffect(() => {
+    if (formData.religion) {
+      const categories = getCategoriesForReligion(formData.religion);
+      setCategoryOptions(categories);
+      // Reset category and caste when religion changes
+      setFormData(prev => ({
+        ...prev,
+        category: '',
+        caste: ''
+      }));
+      setCasteOptions([]);
+    } else {
+      setCategoryOptions([]);
+      setCasteOptions([]);
+    }
+  }, [formData.religion]);
+
+  // Update castes when category changes
+  useEffect(() => {
+    if (formData.religion && formData.category) {
+      const castes = getCastesForCategory(formData.religion, formData.category);
+      setCasteOptions(castes);
+      // Reset caste when category changes
+      setFormData(prev => ({
+        ...prev,
+        caste: ''
+      }));
+    } else {
+      setCasteOptions([]);
+    }
+  }, [formData.religion, formData.category]);
+
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     if (type === 'checkbox') {
-      // Handle scheme selection
+      // Handle boolean checkbox fields
       setFormData(prev => ({
         ...prev,
-        schemes: checked 
-          ? [...prev.schemes, value]
-          : prev.schemes.filter(scheme => scheme !== value)
+        [name]: checked
       }));
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
-
-      // Load castes when category changes
-      if (name === 'category' && value) {
-        try {
-          const response = await referenceAPI.getCastes(value);
-          setReferenceData(prev => ({
-            ...prev,
-            castes: response.data
-          }));
-          setFormData(prev => ({
-            ...prev,
-            caste: '' // Reset caste when category changes
-          }));
-        } catch (error) {
-          console.error('Error loading castes:', error);
-        }
-      }
     }
   };
 
@@ -107,13 +110,18 @@ const Schemes = () => {
       return;
     }
 
+    if (!formData.gender) {
+      setError('Please select gender');
+      return;
+    }
+
     if (!/^[6-9]\d{9}$/.test(formData.phone)) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
 
-    if (!/^[6-9]\d{9}$/.test(formData.leaderMobile)) {
-      setError('Please enter a valid 10-digit leader mobile number');
+    if (!formData.leaderMobile || !/^[6-9]\d{9}$/.test(formData.leaderMobile)) {
+      setError('Leader mobile number is missing or invalid. Please update your profile.');
       return;
     }
 
@@ -122,61 +130,33 @@ const Schemes = () => {
       return;
     }
 
-    if (formData.schemes.length === 0) {
-      setError('Please select at least one scheme');
-      return;
-    }
-
     setLoading(true);
 
     try {
       const response = await beneficiaryAPI.initiate(formData);
       
-      if (response.data.registrationNumber) {
+      if (response.data.success && response.data.registrationNumber) {
         setRegistrationNumber(response.data.registrationNumber);
-        setSuccess('Form submitted successfully! Please verify OTP sent to beneficiary\'s phone.');
-        setShowOTPModal(true);
-      }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to submit form');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOTPVerification = async () => {
-    if (!otp || otp.length !== 4) {
-      setError('Please enter a valid 4-digit OTP');
-      return;
-    }
-
-    setOtpLoading(true);
-
-    try {
-      const response = await beneficiaryAPI.verify(formData.phone, otp);
-      
-      if (response.data.success) {
-        setSuccess(`Beneficiary registered successfully! Registration Number: ${registrationNumber}`);
-        setShowOTPModal(false);
+        setSuccess(`Beneficiary registered successfully! Registration Number: ${response.data.registrationNumber}`);
         
         // Reset form
         setFormData({
           name: '',
           age: '',
+          gender: '',
           phone: '',
           religion: '',
           category: '',
           caste: '',
-          schemes: [],
-          leaderMobile: ''
+          voterIdHelp: false,
+          congressWork: false,
+          leaderMobile: user?.leaderPhone || ''
         });
-        setOtp('');
-        setRegistrationNumber('');
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'OTP verification failed');
+      setError(error.response?.data?.message || 'Failed to submit form');
     } finally {
-      setOtpLoading(false);
+      setLoading(false);
     }
   };
 
@@ -189,7 +169,7 @@ const Schemes = () => {
               Beneficiary Registration
             </h2>
             <p className="text-center text-muted mb-5">
-              Register beneficiaries for government schemes and welfare programs
+              Register beneficiaries and collect their information for welfare programs
             </p>
           </Col>
         </Row>
@@ -203,7 +183,7 @@ const Schemes = () => {
 
                 <Form onSubmit={handleSubmit}>
                   <Row>
-                    <Col md={6}>
+                    <Col md={4}>
                       <Form.Group className="mb-3">
                         <Form.Label>Full Name *</Form.Label>
                         <Form.Control
@@ -217,7 +197,7 @@ const Schemes = () => {
                         />
                       </Form.Group>
                     </Col>
-                    <Col md={6}>
+                    <Col md={4}>
                       <Form.Group className="mb-3">
                         <Form.Label>Age *</Form.Label>
                         <Form.Control
@@ -231,6 +211,25 @@ const Schemes = () => {
                           max="100"
                           required
                         />
+                      </Form.Group>
+                    </Col>
+                    <Col md={4}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Gender *</Form.Label>
+                        <Form.Select
+                          name="gender"
+                          value={formData.gender}
+                          onChange={handleInputChange}
+                          className="form-select-custom"
+                          required
+                        >
+                          <option value="">Select Gender</option>
+                          {genderOptions.map(gender => (
+                            <option key={gender.value} value={gender.value}>
+                              {gender.label} ({gender.labelEn})
+                            </option>
+                          ))}
+                        </Form.Select>
                       </Form.Group>
                     </Col>
                   </Row>
@@ -258,12 +257,14 @@ const Schemes = () => {
                           type="tel"
                           name="leaderMobile"
                           value={formData.leaderMobile}
-                          onChange={handleInputChange}
-                          placeholder="Enter leader's mobile number"
                           className="form-control-custom"
                           maxLength="10"
-                          required
+                          readOnly
+                          style={{ backgroundColor: '#f8f9fa' }}
                         />
+                        <Form.Text className="text-muted">
+                          Auto-populated from your profile
+                        </Form.Text>
                       </Form.Group>
                     </Col>
                   </Row>
@@ -280,9 +281,9 @@ const Schemes = () => {
                           required
                         >
                           <option value="">Select Religion</option>
-                          {referenceData.religions.map(religion => (
-                            <option key={religion.id} value={religion.name}>
-                              {religion.name}
+                          {religionOptions.map(religion => (
+                            <option key={religion} value={religion}>
+                              {religion}
                             </option>
                           ))}
                         </Form.Select>
@@ -296,12 +297,13 @@ const Schemes = () => {
                           value={formData.category}
                           onChange={handleInputChange}
                           className="form-select-custom"
+                          disabled={!formData.religion}
                           required
                         >
                           <option value="">Select Category</option>
-                          {referenceData.categories.map(category => (
-                            <option key={category.id} value={category.name}>
-                              {category.name}
+                          {categoryOptions.map(category => (
+                            <option key={category} value={category}>
+                              {category}
                             </option>
                           ))}
                         </Form.Select>
@@ -319,9 +321,9 @@ const Schemes = () => {
                           required
                         >
                           <option value="">Select Caste</option>
-                          {referenceData.castes.map(caste => (
-                            <option key={caste.id} value={caste.name}>
-                              {caste.name}
+                          {casteOptions.map(caste => (
+                            <option key={caste} value={caste}>
+                              {caste}
                             </option>
                           ))}
                         </Form.Select>
@@ -329,23 +331,33 @@ const Schemes = () => {
                     </Col>
                   </Row>
 
-                  <Form.Group className="mb-4">
-                    <Form.Label>Select Schemes *</Form.Label>
-                    <div className="mt-2">
-                      {referenceData.schemes.map(scheme => (
-                        <Form.Check
-                          key={scheme.id}
-                          type="checkbox"
-                          id={`scheme-${scheme.id}`}
-                          label={scheme.name}
-                          value={scheme.name}
-                          checked={formData.schemes.includes(scheme.name)}
-                          onChange={handleInputChange}
-                          className="mb-2"
-                        />
-                      ))}
-                    </div>
-                  </Form.Group>
+                  <Row>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Additional Information</Form.Label>
+                        <div className="mt-2">
+                          <Form.Check
+                            type="checkbox"
+                            id="voterIdHelp"
+                            name="voterIdHelp"
+                            label="Do you need help with Voter ID registration?"
+                            checked={formData.voterIdHelp}
+                            onChange={handleInputChange}
+                            className="mb-2"
+                          />
+                          <Form.Check
+                            type="checkbox"
+                            id="congressWork"
+                            name="congressWork"
+                            label="Would you like to work with Congress at Panchayat/Ward level?"
+                            checked={formData.congressWork}
+                            onChange={handleInputChange}
+                            className="mb-2"
+                          />
+                        </div>
+                      </Form.Group>
+                    </Col>
+                  </Row>
 
                   <Button
                     type="submit"
@@ -367,55 +379,6 @@ const Schemes = () => {
           </Col>
         </Row>
       </Container>
-
-      {/* OTP Verification Modal */}
-      <Modal show={showOTPModal} onHide={() => setShowOTPModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Verify OTP</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>
-            OTP has been sent to <strong>+91 {formData.phone}</strong>
-          </p>
-          <p className="text-muted small">
-            Registration Number: <strong>{registrationNumber}</strong>
-          </p>
-          
-          <Form.Group className="mb-3">
-            <Form.Label>Enter OTP</Form.Label>
-            <Form.Control
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter 4-digit OTP"
-              className="form-control-custom text-center"
-              maxLength="4"
-            />
-            <Form.Text className="text-muted">
-              For testing, use: 1234
-            </Form.Text>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowOTPModal(false)}>
-            Cancel
-          </Button>
-          <Button 
-            className="btn-primary-custom"
-            onClick={handleOTPVerification}
-            disabled={otpLoading}
-          >
-            {otpLoading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Verifying...
-              </>
-            ) : (
-              'Verify OTP'
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 };

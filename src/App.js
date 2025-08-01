@@ -23,24 +23,38 @@ function AppContent() {
             {/* Public Routes */}
             <Route 
               path="/signup" 
-              element={user ? <Navigate to="/home" /> : <Signup />} 
+              element={user && user.profileCompleted ? <Navigate to="/home" /> : <Signup />} 
             />
             <Route 
               path="/login" 
-              element={user ? <Navigate to="/home" /> : <Login />} 
+              element={user && user.profileCompleted ? <Navigate to="/home" /> : <Login />} 
             />
             
-            {/* Protected Routes */}
+            {/* Profile Route - accessible to logged in users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<Profile />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/schemes" element={<Schemes />} />
+            </Route>
+            
+            {/* Protected Routes - only for users with completed profiles */}
+            <Route element={<ProtectedRoute />}>
+              <Route 
+                path="/home" 
+                element={user && !user.profileCompleted ? <Navigate to="/profile" /> : <Home />} 
+              />
+              <Route 
+                path="/schemes" 
+                element={user && !user.profileCompleted ? <Navigate to="/profile" /> : <Schemes />} 
+              />
             </Route>
             
             {/* Default Route */}
             <Route 
               path="/" 
-              element={user ? <Navigate to="/home" /> : <Navigate to="/signup" />} 
+              element={
+                user 
+                  ? (user.profileCompleted ? <Navigate to="/home" /> : <Navigate to="/profile" />)
+                  : <Navigate to="/signup" />
+              } 
             />
           </Routes>
         </div>

@@ -3,6 +3,7 @@ import { Container, Card, Form, Button, Alert, Spinner, Row, Col } from 'react-b
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { referenceAPI } from '../services/api';
+import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
 
 const Profile = () => {
   const location = useLocation();
@@ -13,22 +14,23 @@ const Profile = () => {
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
+    gender: user?.gender || '',
     role: location.state?.role || user?.role || 'volunteer',
     religion: user?.religion || '',
+    category: user?.category || '',
     caste: user?.caste || '',
     pc: user?.pc || '',
     ac: user?.ac || '',
-    panchayat: user?.panchayat || '',
     leaderPhone: user?.leaderPhone || ''
   });
 
   const [referenceData, setReferenceData] = useState({
-    religions: [],
-    castes: [],
     pcs: [],
-    acs: [],
-    panchayats: []
+    acs: []
   });
+
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [casteOptions, setCasteOptions] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,29 +46,47 @@ const Profile = () => {
     }
   }, [formData.pc]);
 
+  // Update categories when religion changes
+  useEffect(() => {
+    if (formData.religion) {
+      const categories = getCategoriesForReligion(formData.religion);
+      setCategoryOptions(categories);
+      // Reset category and caste when religion changes
+      setFormData(prev => ({
+        ...prev,
+        category: '',
+        caste: ''
+      }));
+      setCasteOptions([]);
+    } else {
+      setCategoryOptions([]);
+      setCasteOptions([]);
+    }
+  }, [formData.religion]);
+
+  // Update castes when category changes
+  useEffect(() => {
+    if (formData.religion && formData.category) {
+      const castes = getCastesForCategory(formData.religion, formData.category);
+      setCasteOptions(castes);
+      // Reset caste when category changes
+      setFormData(prev => ({
+        ...prev,
+        caste: ''
+      }));
+    } else {
+      setCasteOptions([]);
+    }
+  }, [formData.religion, formData.category]);
+
   const loadReferenceData = async () => {
     try {
-      const [religionsRes, pcsRes, panchayatsRes] = await Promise.all([
-        referenceAPI.getReligions(),
-        referenceAPI.getPCs(),
-        referenceAPI.getPanchayats()
-      ]);
+      const pcsRes = await referenceAPI.getPCs();
 
       setReferenceData(prev => ({
         ...prev,
-        religions: religionsRes.data,
-        pcs: pcsRes.data,
-        panchayats: panchayatsRes.data
+        pcs: pcsRes.data
       }));
-
-      // Load castes if religion is already selected
-      if (formData.religion) {
-        const castesRes = await referenceAPI.getCastes(formData.religion);
-        setReferenceData(prev => ({
-          ...prev,
-          castes: castesRes.data
-        }));
-      }
 
       // Load ACs if PC is already selected
       if (formData.pc) {
@@ -94,277 +114,289 @@ const Profile = () => {
     }
   };
 
-  const handleInputChange = async (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
 
-    // Load castes when religion changes
-    if (name === 'religion' && value) {
-      try {
-        const response = await referenceAPI.getCastes(value);
-        setReferenceData(prev => ({
-          ...prev,
-          castes: response.data
-        }));
-        setFormData(prev => ({
-          ...prev,
-          caste: '' // Reset caste when religion changes
-        }));
-      } catch (error) {
-        console.error('Error loading castes:', error);
-      }
+  const validateForm = () => {
+    const errors = [];
+    
+    if (!formData.name.trim()) errors.push('Name is required');
+    if (!formData.gender) errors.push('Gender is required');
+    if (!formData.religion) errors.push('Religion is required');
+    if (!formData.category) errors.push('Category is required');
+    if (!formData.caste.trim()) errors.push('Caste is required');
+    if (!formData.pc) errors.push('Parliamentary Constituency is required');
+    if (!formData.ac) errors.push('Assembly Constituency is required');
+    
+    if (formData.role === 'volunteer' && !formData.leaderPhone.trim()) {
+      errors.push('Leader phone is required for volunteers');
     }
-
-    // Load ACs when PC changes
-    if (name === 'pc' && value) {
-      setFormData(prev => ({
-        ...prev,
-        ac: '' // Reset AC when PC changes
-      }));
+    
+    if (formData.leaderPhone && !/^\d{10}$/.test(formData.leaderPhone)) {
+      errors.push('Leader phone must be 10 digits');
     }
+    
+    return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(', '));
+      return;
+    }
+    
+    setLoading(true);
     setError('');
     setSuccess('');
-
-    // Validation
-    if (!formData.name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (formData.role === 'volunteer' && !formData.leaderPhone.trim()) {
-      setError('Leader phone number is required for volunteers');
-      return;
-    }
-
-    if (formData.leaderPhone && !/^[6-9]\d{9}$/.test(formData.leaderPhone)) {
-      setError('Please enter a valid 10-digit leader phone number');
-      return;
-    }
-
-    setLoading(true);
-
-    const result = await updateProfile(formData);
-
-    setLoading(false);
-
-    if (result.success) {
+    
+    try {
+      await updateProfile(formData);
       setSuccess('Profile updated successfully!');
       
-      if (isFirstTime) {
-        // For first time users, log them out and redirect to login
-        setTimeout(() => {
-          logout();
-          navigate('/login', { 
-            state: { 
-              message: 'Profile setup complete! Please login again to continue.' 
-            }
-          });
-        }, 2000);
-      }
-    } else {
-      setError(result.message);
+      // Navigate to home after successful profile completion
+      setTimeout(() => {
+        navigate('/home');
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Profile update error:', error);
+      setError(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="page-container" style={{ paddingTop: '100px' }}>
-      <Container>
-        <Row className="justify-content-center">
-          <Col md={8} lg={6}>
-            <Card className="card-custom fade-in">
-              <Card.Body className="p-4">
-                <h2 className="auth-title">
-                  {isFirstTime ? 'Complete Your Profile' : 'Update Profile'}
-                </h2>
-                
-                {isFirstTime && (
-                  <Alert variant="info" className="alert-custom">
-                    Please complete your profile information. You will be logged out after completion and need to login again.
-                  </Alert>
-                )}
+    <Container className="py-4">
+      <Row className="justify-content-center">
+        <Col md={8} lg={6}>
+          <Card>
+            <Card.Header className="bg-primary text-white">
+              <h4 className="mb-0">
+                {isFirstTime ? 'Complete Your Profile' : 'Update Profile'}
+              </h4>
+            </Card.Header>
+            <Card.Body>
+              {error && <Alert variant="danger">{error}</Alert>}
+              {success && <Alert variant="success">{success}</Alert>}
+              
+              <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Name *</Form.Label>
+                      <Form.Control
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Enter your full name"
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Gender *</Form.Label>
+                      <Form.Select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select Gender</option>
+                        {genderOptions.map(gender => (
+                          <option key={gender.value} value={gender.value}>
+                            {gender.label} ({gender.labelEn})
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-                {error && <Alert variant="danger" className="alert-custom alert-danger-custom">{error}</Alert>}
-                {success && <Alert variant="success" className="alert-custom alert-success-custom">{success}</Alert>}
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Role</Form.Label>
+                      <Form.Select
+                        name="role"
+                        value={formData.role}
+                        onChange={handleChange}
+                        disabled={!isFirstTime}
+                      >
+                        <option value="volunteer">Volunteer</option>
+                        <option value="leader">Leader</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Religion *</Form.Label>
+                      <Form.Select
+                        name="religion"
+                        value={formData.religion}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select Religion</option>
+                        {religionOptions.map(religion => (
+                          <option key={religion} value={religion}>
+                            {religion}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-                <Form onSubmit={handleSubmit}>
-                  <Row>
+                <Row>
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Category *</Form.Label>
+                      <Form.Select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        required
+                        disabled={!formData.religion}
+                      >
+                        <option value="">Select Category</option>
+                        {categoryOptions.map(category => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={8}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Caste *</Form.Label>
+                      <Form.Select
+                        name="caste"
+                        value={formData.caste}
+                        onChange={handleChange}
+                        required
+                        disabled={!formData.category}
+                      >
+                        <option value="">Select Caste</option>
+                        {casteOptions.map(caste => (
+                          <option key={caste} value={caste}>
+                            {caste}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Parliamentary Constituency *</Form.Label>
+                      <Form.Select
+                        name="pc"
+                        value={formData.pc}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select PC</option>
+                        {referenceData.pcs.map(pc => (
+                          <option key={pc._id} value={pc.name}>
+                            {pc.name}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Assembly Constituency *</Form.Label>
+                      <Form.Select
+                        name="ac"
+                        value={formData.ac}
+                        onChange={handleChange}
+                        required
+                        disabled={!formData.pc}
+                      >
+                        <option value="">Select AC</option>
+                        {referenceData.acs.map(ac => (
+                          <option key={ac._id} value={ac.name}>
+                            {ac.name}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Row>
+                  {formData.role === 'volunteer' && (
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Full Name *</Form.Label>
+                        <Form.Label>Leader Phone *</Form.Label>
                         <Form.Control
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="Enter your full name"
-                          className="form-control-custom"
+                          type="tel"
+                          name="leaderPhone"
+                          value={formData.leaderPhone}
+                          onChange={handleChange}
+                          placeholder="Enter leader's phone number"
+                          maxLength="10"
                           required
                         />
                       </Form.Group>
                     </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Role</Form.Label>
-                        <Form.Select
-                          name="role"
-                          value={formData.role}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                          disabled={!isFirstTime}
-                        >
-                          <option value="volunteer">Volunteer</option>
-                          <option value="leader">Leader</option>
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                  )}
+                </Row>
 
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Religion</Form.Label>
-                        <Form.Select
-                          name="religion"
-                          value={formData.religion}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                        >
-                          <option value="">Select Religion</option>
-                          {referenceData.religions.map(religion => (
-                            <option key={religion.id} value={religion.name}>
-                              {religion.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Caste</Form.Label>
-                        <Form.Select
-                          name="caste"
-                          value={formData.caste}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                          disabled={!formData.religion}
-                        >
-                          <option value="">Select Caste</option>
-                          {referenceData.castes.map(caste => (
-                            <option key={caste.id} value={caste.name}>
-                              {caste.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Parliamentary Constituency (PC)</Form.Label>
-                        <Form.Select
-                          name="pc"
-                          value={formData.pc}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                        >
-                          <option value="">Select PC</option>
-                          {referenceData.pcs.map(pc => (
-                            <option key={pc.id} value={pc.name}>
-                              {pc.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Assembly Constituency (AC)</Form.Label>
-                        <Form.Select
-                          name="ac"
-                          value={formData.ac}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                          disabled={!formData.pc}
-                        >
-                          <option value="">Select AC</option>
-                          {referenceData.acs.map(ac => (
-                            <option key={ac.id} value={ac.name}>
-                              {ac.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Panchayat</Form.Label>
-                        <Form.Select
-                          name="panchayat"
-                          value={formData.panchayat}
-                          onChange={handleInputChange}
-                          className="form-select-custom"
-                        >
-                          <option value="">Select Panchayat</option>
-                          {referenceData.panchayats.map(panchayat => (
-                            <option key={panchayat.id} value={panchayat.name}>
-                              {panchayat.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    {formData.role === 'volunteer' && (
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Leader Phone Number *</Form.Label>
-                          <Form.Control
-                            type="tel"
-                            name="leaderPhone"
-                            value={formData.leaderPhone}
-                            onChange={handleInputChange}
-                            placeholder="Enter leader's phone number"
-                            className="form-control-custom"
-                            maxLength="10"
-                            required
-                          />
-                        </Form.Group>
-                      </Col>
-                    )}
-                  </Row>
-
+                <div className="d-flex justify-content-between">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={handleLogout}
+                    disabled={loading}
+                  >
+                    Logout
+                  </Button>
+                  
                   <Button
                     type="submit"
-                    className="btn-primary-custom w-100"
+                    variant="primary"
                     disabled={loading}
                   >
                     {loading ? (
                       <>
-                        <Spinner animation="border" size="sm" className="me-2" />
-                        {isFirstTime ? 'Setting up profile...' : 'Updating profile...'}
+                        <Spinner size="sm" className="me-2" />
+                        {isFirstTime ? 'Completing...' : 'Updating...'}
                       </>
                     ) : (
-                      isFirstTime ? 'Complete Setup' : 'Update Profile'
+                      isFirstTime ? 'Complete Profile' : 'Update Profile'
                     )}
                   </Button>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    </div>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

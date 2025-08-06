@@ -125,8 +125,8 @@ const Signup = () => {
                       className="form-select-custom"
                       required
                     >
-                      <option value="volunteer">स्वयंसेवक</option>
-                      <option value="leader">नेता</option>
+                      <option value="volunteer">Volunteer</option>
+                      <option value="leader">Leader</option>
                     </Form.Select>
                   </Form.Group>
 

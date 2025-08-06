@@ -13,7 +13,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  const { login, resendOTP } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,18 +38,21 @@ const Login = () => {
     
     // Validate phone number
     if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-      setError('Please enter a valid 10-digit phone number');
+      setError('कृपया एक वैध 10 अंकों का मोबाइल नंबर दर्ज करें');
       return;
     }
 
     setLoading(true);
     
-    const result = await resendOTP(formData.phone);
+    const result = await signup({
+      phone: formData.phone,
+      role: 'volunteer'
+    });
 
     setLoading(false);
 
     if (result.success) {
-      setSuccess('OTP sent successfully! Please check your phone.');
+      setSuccess('OTP सफलतापूर्वक भेजा गया! कृपया अपना फोन चेक करें।');
       setStep(2);
     } else {
       setError(result.message);
@@ -61,7 +64,7 @@ const Login = () => {
     setError('');
     
     if (!formData.otp || formData.otp.length !== 4) {
-      setError('Please enter a valid 4-digit OTP');
+      setError('कृपया 4 अंकों का वैध OTP दर्ज करें');
       return;
     }
 
@@ -74,22 +77,7 @@ const Login = () => {
     if (result.success) {
       navigate('/home');
     } else {
-      setError(result.message);
-    }
-  };
-
-  const handleResendOTP = async () => {
-    setError('');
-    setLoading(true);
-    
-    const result = await resendOTP(formData.phone);
-
-    setLoading(false);
-
-    if (result.success) {
-      setSuccess('OTP resent successfully!');
-    } else {
-      setError(result.message);
+      setError(result.message || 'लॉगिन में त्रुटि हुई');
     }
   };
 
@@ -100,7 +88,7 @@ const Login = () => {
           <Card className="auth-card fade-in">
             <Card.Body>
               <h2 className="auth-title">
-                {step === 1 ? 'Login' : 'Verify OTP'}
+                {step === 1 ? 'लॉगिन' : 'OTP सत्यापित करें'}
               </h2>
               
               {error && <Alert variant="danger" className="alert-custom alert-danger-custom">{error}</Alert>}
@@ -109,13 +97,13 @@ const Login = () => {
               {step === 1 ? (
                 <Form onSubmit={handleSendOTP}>
                   <Form.Group className="mb-4">
-                    <Form.Label>Phone Number</Form.Label>
+                    <Form.Label>मोबाइल नंबर</Form.Label>
                     <Form.Control
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="Enter 10-digit phone number"
+                      placeholder="10 अंकों का मोबाइल नंबर दर्ज करें"
                       className="form-control-custom"
                       required
                       maxLength="10"
@@ -130,10 +118,10 @@ const Login = () => {
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Sending OTP...
+                        OTP भेजा जा रहा है...
                       </>
                     ) : (
-                      'Send OTP'
+                      'OTP भेजें'
                     )}
                   </Button>
                 </Form>
@@ -141,25 +129,22 @@ const Login = () => {
                 <Form onSubmit={handleLogin}>
                   <div className="mb-3">
                     <p className="text-muted">
-                      OTP sent to +91 {formData.phone}
+                      +91 {formData.phone} पर OTP भेजा गया
                     </p>
                   </div>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Enter OTP</Form.Label>
+                    <Form.Label>OTP दर्ज करें</Form.Label>
                     <Form.Control
                       type="text"
                       name="otp"
                       value={formData.otp}
                       onChange={handleInputChange}
-                      placeholder="Enter 4-digit OTP"
+                      placeholder="4 अंकों का OTP दर्ज करें"
                       className="form-control-custom text-center"
                       maxLength="4"
                       required
                     />
-                    <Form.Text className="text-muted">
-                      For testing, use: 1234
-                    </Form.Text>
                   </Form.Group>
 
                   <Button
@@ -170,29 +155,20 @@ const Login = () => {
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Logging in...
+                        लॉगिन हो रहा है...
                       </>
                     ) : (
-                      'Login'
+                      'लॉगिन करें'
                     )}
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleResendOTP}
-                    disabled={loading}
-                    className="w-100"
-                  >
-                    Resend OTP
-                  </Button>
                 </Form>
               )}
 
               <div className="text-center mt-3">
-                <span className="text-muted">Don't have an account? </span>
+                <span className="text-muted">खाता नहीं है? </span>
                 <Link to="/signup" className="text-decoration-none">
-                  Sign up here
+                  यहाँ साइन अप करें
                 </Link>
               </div>
             </Card.Body>

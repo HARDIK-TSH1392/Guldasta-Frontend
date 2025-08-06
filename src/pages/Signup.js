@@ -31,7 +31,7 @@ const Signup = () => {
     
     // Validate phone number
     if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-      setError('Please enter a valid 10-digit phone number');
+      setError('कृपया एक वैध 10 अंकों का मोबाइल नंबर दर्ज करें');
       return;
     }
 
@@ -46,7 +46,7 @@ const Signup = () => {
     setLoading(false);
 
     if (result.success) {
-      setSuccess('OTP sent successfully! Please check your phone.');
+      setSuccess('OTP सफलतापूर्वक भेजा गया! कृपया अपना फोन चेक करें।');
       setStep(2);
     } else {
       setError(result.message);
@@ -78,32 +78,13 @@ const Signup = () => {
           } 
         });
       } else {
-        setError(result.message || 'Invalid OTP. Please try again.');
+        setError(result.message || 'गलत OTP। कृपया पुनः प्रयास करें।');
       }
     } catch (error) {
-      setError('Verification failed. Please try again.');
+      setError('सत्यापन असफल। कृपया पुनः प्रयास करें।');
     }
     
     setLoading(false);
-  };
-
-  const handleResendOTP = async () => {
-    setError('');
-    setLoading(true);
-    
-    const result = await signup({
-      name: '',
-      phone: formData.phone,
-      role: formData.role
-    });
-
-    setLoading(false);
-
-    if (result.success) {
-      setSuccess('OTP resent successfully!');
-    } else {
-      setError(result.message);
-    }
   };
 
   return (
@@ -113,7 +94,7 @@ const Signup = () => {
           <Card className="auth-card fade-in">
             <Card.Body>
               <h2 className="auth-title">
-                {step === 1 ? 'Sign Up' : 'Verify OTP'}
+                {step === 1 ? 'साइन अप' : 'OTP सत्यापित करें'}
               </h2>
               
               {error && <Alert variant="danger" className="alert-custom alert-danger-custom">{error}</Alert>}
@@ -122,13 +103,13 @@ const Signup = () => {
               {step === 1 ? (
                 <Form onSubmit={handleSendOTP}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Phone Number</Form.Label>
+                    <Form.Label>मोबाइल नंबर</Form.Label>
                     <Form.Control
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="Enter 10-digit phone number"
+                      placeholder="10 अंकों का मोबाइल नंबर दर्ज करें"
                       className="form-control-custom"
                       required
                       maxLength="10"
@@ -136,7 +117,7 @@ const Signup = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-4">
-                    <Form.Label>Role</Form.Label>
+                    <Form.Label>भूमिका</Form.Label>
                     <Form.Select
                       name="role"
                       value={formData.role}
@@ -144,8 +125,8 @@ const Signup = () => {
                       className="form-select-custom"
                       required
                     >
-                      <option value="volunteer">Volunteer</option>
-                      <option value="leader">Leader</option>
+                      <option value="volunteer">स्वयंसेवक</option>
+                      <option value="leader">नेता</option>
                     </Form.Select>
                   </Form.Group>
 
@@ -157,10 +138,10 @@ const Signup = () => {
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Sending OTP...
+                        OTP भेजा जा रहा है...
                       </>
                     ) : (
-                      'Send OTP'
+                      'OTP भेजें'
                     )}
                   </Button>
                 </Form>
@@ -201,16 +182,6 @@ const Signup = () => {
                     ) : (
                       'Verify OTP'
                     )}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={handleResendOTP}
-                    disabled={loading}
-                    className="w-100"
-                  >
-                    Resend OTP
                   </Button>
                 </Form>
               )}

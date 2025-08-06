@@ -19,12 +19,14 @@ const Profile = () => {
     religion: user?.religion || '',
     category: user?.category || '',
     caste: user?.caste || '',
+    state: 'Bihar', // Hardcoded to Bihar
     pc: user?.pc || '',
     ac: user?.ac || '',
     leaderPhone: user?.leaderPhone || ''
   });
 
   const [referenceData, setReferenceData] = useState({
+    states: [],
     pcs: [],
     acs: []
   });
@@ -38,6 +40,11 @@ const Profile = () => {
 
   useEffect(() => {
     loadReferenceData();
+  }, []);
+
+  useEffect(() => {
+    // Always load PCs for Bihar since state is hardcoded
+    loadPCs();
   }, []);
 
   useEffect(() => {
@@ -81,8 +88,8 @@ const Profile = () => {
 
   const loadReferenceData = async () => {
     try {
+      // Load PCs for Bihar since state is hardcoded
       const pcsRes = await referenceAPI.getPCs();
-
       setReferenceData(prev => ({
         ...prev,
         pcs: pcsRes.data
@@ -102,12 +109,36 @@ const Profile = () => {
     }
   };
 
+  const loadPCs = async () => {
+    try {
+      const response = await referenceAPI.getPCs();
+      setReferenceData(prev => ({
+        ...prev,
+        pcs: response.data,
+        acs: [] // Clear ACs when loading PCs
+      }));
+      // Reset PC and AC when loading fresh PCs
+      setFormData(prev => ({
+        ...prev,
+        pc: '',
+        ac: ''
+      }));
+    } catch (error) {
+      console.error('Error loading PCs:', error);
+    }
+  };
+
   const loadACs = async (pc) => {
     try {
       const response = await referenceAPI.getACs(pc);
       setReferenceData(prev => ({
         ...prev,
         acs: response.data
+      }));
+      // Reset AC when PC changes
+      setFormData(prev => ({
+        ...prev,
+        ac: ''
       }));
     } catch (error) {
       console.error('Error loading ACs:', error);
@@ -197,13 +228,13 @@ const Profile = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Name *</Form.Label>
+                      <Form.Label>नाम *</Form.Label>
                       <Form.Control
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="Enter your full name"
+                        placeholder="अपना पूरा नाम दर्ज करें"
                         required
                       />
                     </Form.Group>
@@ -211,7 +242,7 @@ const Profile = () => {
                   
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Gender *</Form.Label>
+                      <Form.Label>लिंग *</Form.Label>
                       <Form.Select
                         name="gender"
                         value={formData.gender}
@@ -232,7 +263,7 @@ const Profile = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Role</Form.Label>
+                      <Form.Label>भूमिका</Form.Label>
                       <Form.Select
                         name="role"
                         value={formData.role}
@@ -247,7 +278,7 @@ const Profile = () => {
                   
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Religion *</Form.Label>
+                      <Form.Label>धर्म *</Form.Label>
                       <Form.Select
                         name="religion"
                         value={formData.religion}
@@ -268,7 +299,7 @@ const Profile = () => {
                 <Row>
                   <Col md={4}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Category *</Form.Label>
+                      <Form.Label>श्रेणी *</Form.Label>
                       <Form.Select
                         name="category"
                         value={formData.category}
@@ -288,7 +319,7 @@ const Profile = () => {
                   
                   <Col md={8}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Caste *</Form.Label>
+                      <Form.Label>जाति *</Form.Label>
                       <Form.Select
                         name="caste"
                         value={formData.caste}
@@ -310,7 +341,7 @@ const Profile = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Parliamentary Constituency *</Form.Label>
+                      <Form.Label>संसदीय क्षेत्र (बिहार) *</Form.Label>
                       <Form.Select
                         name="pc"
                         value={formData.pc}
@@ -329,7 +360,7 @@ const Profile = () => {
                   
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Assembly Constituency *</Form.Label>
+                      <Form.Label>विधानसभा क्षेत्र *</Form.Label>
                       <Form.Select
                         name="ac"
                         value={formData.ac}
@@ -352,7 +383,7 @@ const Profile = () => {
                   {formData.role === 'volunteer' && (
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Leader Phone *</Form.Label>
+                        <Form.Label>नेता का फोन *</Form.Label>
                         <Form.Control
                           type="tel"
                           name="leaderPhone"

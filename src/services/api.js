@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.voteradhikarpatra.com';
+const API_BASE_URL = 'http://localhost:8080';
 
 // Create axios instance
 const api = axios.create({
@@ -16,19 +16,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Reference Data APIs - Updated to use new Bihar-specific endpoints
+// Reference Data APIs - Updated to use dynamic state-based endpoints
 export const referenceAPI = {
   getReligions: () => api.get('/api/reference/religions'),
   getStates: () => api.get('/api/reference/states'),
   getCategories: (religion) => api.get(`/api/reference/categories?religion=${encodeURIComponent(religion)}`),
   getCastes: (religion, category) => api.get(`/api/reference/castes?religion=${encodeURIComponent(religion)}&category=${encodeURIComponent(category)}`),
-  getPCs: (state = 'Bihar') => api.get(`/api/reference/pcs?state=${state}`),
-  getACs: (pc) => api.get(`/api/reference/acs?pc=${encodeURIComponent(pc)}`),
+  getPCs: () => {
+    // Always fetch PCs for Bihar only
+    return api.get(`/api/reference/pcs?state=Bihar`);
+  },
+  getACs: (pc) => {
+    if (!pc) {
+      throw new Error('PC parameter is required for getACs');
+    }
+    return api.get(`/api/reference/acs?pc=${encodeURIComponent(pc)}`);
+  },
 };
 
-// Beneficiary APIs
+// Beneficiary APIs - Updated for 2-step OTP process
 export const beneficiaryAPI = {
   initiate: (beneficiaryData) => api.post('/api/beneficiaries/initiate', beneficiaryData),
+  verify: (phone, otp) => api.post('/api/beneficiaries/verify', { phone, otp }),
   getAll: () => api.get('/api/beneficiaries'),
 };
 

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { beneficiaryAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
 
 const Schemes = () => {
-  const { user } = useAuth();
+  const { user, initiateBeneficiary } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -20,8 +19,6 @@ const Schemes = () => {
     leaderMobile: user?.leaderPhone || ''
   });
 
-  const [referenceData, setReferenceData] = useState({});
-
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [casteOptions, setCasteOptions] = useState([]);
 
@@ -29,10 +26,6 @@ const Schemes = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
-
-  useEffect(() => {
-    // No reference data loading needed anymore
-  }, []);
 
   // Update leaderMobile when user data is available
   useEffect(() => {
@@ -133,9 +126,10 @@ const Schemes = () => {
     setLoading(true);
 
     try {
-      const response = await beneficiaryAPI.initiate(formData);
+      // Direct submission to backend
+      const response = await initiateBeneficiary(formData);
       
-      if (response.data.success && response.data.registrationNumber) {
+      if (response.success && response.data.registrationNumber) {
         setRegistrationNumber(response.data.registrationNumber);
         setSuccess(`Beneficiary registered successfully! Registration Number: ${response.data.registrationNumber}`);
         
@@ -152,9 +146,11 @@ const Schemes = () => {
           congressWork: false,
           leaderMobile: user?.leaderPhone || ''
         });
+      } else {
+        setError(response.message || 'Failed to register beneficiary');
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to submit form');
+      setError('Failed to submit form. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -185,7 +181,7 @@ const Schemes = () => {
                   <Row>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Full Name *</Form.Label>
+                        <Form.Label>पूरा नाम *</Form.Label>
                         <Form.Control
                           type="text"
                           name="name"
@@ -199,7 +195,7 @@ const Schemes = () => {
                     </Col>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Age *</Form.Label>
+                        <Form.Label>आयु *</Form.Label>
                         <Form.Control
                           type="number"
                           name="age"
@@ -215,7 +211,7 @@ const Schemes = () => {
                     </Col>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Gender *</Form.Label>
+                        <Form.Label>लिंग *</Form.Label>
                         <Form.Select
                           name="gender"
                           value={formData.gender}
@@ -237,7 +233,7 @@ const Schemes = () => {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Phone Number *</Form.Label>
+                        <Form.Label>मोबाइल नंबर *</Form.Label>
                         <Form.Control
                           type="tel"
                           name="phone"
@@ -252,7 +248,7 @@ const Schemes = () => {
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Leader Mobile *</Form.Label>
+                        <Form.Label>नेता का मोबाइल *</Form.Label>
                         <Form.Control
                           type="tel"
                           name="leaderMobile"
@@ -272,7 +268,7 @@ const Schemes = () => {
                   <Row>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Religion *</Form.Label>
+                        <Form.Label>धर्म *</Form.Label>
                         <Form.Select
                           name="religion"
                           value={formData.religion}
@@ -291,7 +287,7 @@ const Schemes = () => {
                     </Col>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Category *</Form.Label>
+                        <Form.Label>श्रेणी *</Form.Label>
                         <Form.Select
                           name="category"
                           value={formData.category}
@@ -311,7 +307,7 @@ const Schemes = () => {
                     </Col>
                     <Col md={4}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Caste *</Form.Label>
+                        <Form.Label>जाति *</Form.Label>
                         <Form.Select
                           name="caste"
                           value={formData.caste}
@@ -334,13 +330,13 @@ const Schemes = () => {
                   <Row>
                     <Col md={12}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Additional Information</Form.Label>
+                        <Form.Label>अतिरिक्त जानकारी</Form.Label>
                         <div className="mt-2">
                           <Form.Check
                             type="checkbox"
                             id="voterIdHelp"
                             name="voterIdHelp"
-                            label="Do you need help with Voter ID registration?"
+                            label="क्या आपको वोटर आईडी बनवाने में कोई सहायता चाहिए?"
                             checked={formData.voterIdHelp}
                             onChange={handleInputChange}
                             className="mb-2"
@@ -349,7 +345,7 @@ const Schemes = () => {
                             type="checkbox"
                             id="congressWork"
                             name="congressWork"
-                            label="Would you like to work with Congress at Panchayat/Ward level?"
+                            label="क्या आप पंचायत/वार्ड स्तर पे कांग्रेस के साथ जुड़ के काम करना चाहेंगे?"
                             checked={formData.congressWork}
                             onChange={handleInputChange}
                             className="mb-2"

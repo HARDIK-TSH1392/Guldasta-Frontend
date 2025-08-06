@@ -15,7 +15,7 @@ const CustomNavbar = () => {
     <Navbar className="navbar-custom" expand="lg" fixed="top">
       <Container>
         <Navbar.Brand as={Link} to="/" className="navbar-brand-custom">
-          बिहार अधिकार
+          Indian National Congress
         </Navbar.Brand>
         
         <Navbar.Toggle aria-controls="basic-navbar-nav" />

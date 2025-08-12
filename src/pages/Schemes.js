@@ -431,7 +431,7 @@ const Schemes = () => {
         onHide={() => setShowOTPModal(false)}
         onVerify={handleOTPVerify}
         onResend={handleOTPResend}
-        phone={pendingPhone}
+        phoneNumber={pendingPhone}
         loading={otpLoading}
         title="Verify Beneficiary Registration"
         message={`Please enter the OTP sent to ${pendingPhone} to complete beneficiary registration.`}

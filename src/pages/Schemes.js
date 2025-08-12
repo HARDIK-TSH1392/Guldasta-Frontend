@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
+import OTPModal from '../components/OTPModal';
 
 const Schemes = () => {
-  const { user, initiateBeneficiary } = useAuth();
+  const { user, initiateBeneficiary, verifyBeneficiaryOTP, resendBeneficiaryOTP } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -26,6 +27,11 @@ const Schemes = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
+
+  // OTP related state
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // Update leaderMobile when user data is available
   useEffect(() => {
@@ -126,12 +132,36 @@ const Schemes = () => {
     setLoading(true);
 
     try {
-      // Direct submission to backend
+      // Step 1: Send OTP to beneficiary's phone
       const response = await initiateBeneficiary(formData);
       
-      if (response.success && response.data.registrationNumber) {
+      if (response.success) {
+        // OTP sent successfully - show OTP modal
+        setPendingPhone(formData.phone);
+        setShowOTPModal(true);
+        setSuccess(response.data.message || `OTP sent to ${formData.phone}`);
+      } else {
+        setError(response.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      setError('Failed to submit form. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle OTP verification
+  const handleOTPVerify = async (otp) => {
+    setOtpLoading(true);
+    
+    try {
+      const response = await verifyBeneficiaryOTP(pendingPhone, otp);
+      
+      if (response.success) {
+        // Registration successful
         setRegistrationNumber(response.data.registrationNumber);
         setSuccess(`Beneficiary registered successfully! Registration Number: ${response.data.registrationNumber}`);
+        setShowOTPModal(false);
         
         // Reset form
         setFormData({
@@ -146,13 +176,32 @@ const Schemes = () => {
           congressWork: false,
           leaderMobile: user?.leaderPhone || ''
         });
+        
+        // Reset category and caste options
+        setCategoryOptions([]);
+        setCasteOptions([]);
+        setPendingPhone('');
       } else {
-        setError(response.message || 'Failed to register beneficiary');
+        throw new Error(response.message || 'OTP verification failed');
       }
     } catch (error) {
-      setError('Failed to submit form. Please try again.');
+      throw error; // Let OTPModal handle the error display
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
+    }
+  };
+
+  // Handle OTP resend
+  const handleOTPResend = async () => {
+    try {
+      const response = await resendBeneficiaryOTP(pendingPhone);
+      if (response.success) {
+        setSuccess(`New OTP sent to ${pendingPhone}`);
+      } else {
+        setError(response.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      setError('Failed to resend OTP. Please try again.');
     }
   };
 
@@ -375,6 +424,18 @@ const Schemes = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* OTP Verification Modal */}
+      <OTPModal
+        show={showOTPModal}
+        onHide={() => setShowOTPModal(false)}
+        onVerify={handleOTPVerify}
+        onResend={handleOTPResend}
+        phone={pendingPhone}
+        loading={otpLoading}
+        title="Verify Beneficiary Registration"
+        message={`Please enter the OTP sent to ${pendingPhone} to complete beneficiary registration.`}
+      />
     </div>
   );
 };

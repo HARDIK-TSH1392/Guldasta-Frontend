@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Container, Row, Col, Carousel } from 'react-bootstrap';
-import { useAuth } from '../context/AuthContext';
-import { referenceAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle carousel image click
+  const handleCarouselClick = () => {
+    navigate('/schemes');
+  };
 
   // Carousel data with responsive images
   const carouselItems = [
@@ -67,23 +71,75 @@ const Home = () => {
             <Carousel className="carousel-custom slide-in-right">
               {carouselItems.map(item => (
                 <Carousel.Item key={item.id}>
-                  {/* Responsive Image */}
-                  <picture>
-                    <source 
-                      media="(max-width: 768px)" 
-                      srcSet={item.mobileImage} 
-                    />
-                    <img
-                      className="d-block w-100"
-                      src={item.webImage}
-                      alt={`Slide ${item.id}`}
+                  {/* Clickable Image Container */}
+                  <div 
+                    onClick={handleCarouselClick}
+                    style={{ 
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease-in-out'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    {/* Responsive Image */}
+                    <picture>
+                      <source 
+                        media="(max-width: 768px)" 
+                        srcSet={item.mobileImage} 
+                      />
+                      <img
+                        className="d-block w-100"
+                        src={item.webImage}
+                        alt={`Slide ${item.id} - Click to view schemes`}
+                        style={{
+                          height: 'auto',
+                          maxHeight: '500px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    </picture>
+                    
+                    {/* Optional: Add a subtle overlay hint */}
+                    <div 
+                      className="carousel-overlay"
                       style={{
-                        height: 'auto',
-                        maxHeight: '500px',
-                        objectFit: 'cover'
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.3s ease-in-out'
                       }}
-                    />
-                  </picture>
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0';
+                      }}
+                    >
+                      <div 
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          padding: '10px 20px',
+                          borderRadius: '25px',
+                          color: '#333',
+                          fontWeight: 'bold',
+                          fontSize: '16px'
+                        }}
+                      >
+                        Click to View Schemes
+                      </div>
+                    </div>
+                  </div>
                 </Carousel.Item>
               ))}
             </Carousel>

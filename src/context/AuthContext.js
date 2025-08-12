@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Set up axios defaults for localhost
-  const API_BASE_URL = 'https://api.voteradhikarpatra.com';
+  const API_BASE_URL = 'http://localhost:8080'; // Change this to your backend URL
   axios.defaults.baseURL = API_BASE_URL;
 
   useEffect(() => {
@@ -125,6 +125,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyBeneficiaryOTP = async (phone, otp) => {
+    try {
+      const response = await axios.post('/api/beneficiaries/verify-otp', { phone, otp });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'OTP verification failed' 
+      };
+    }
+  };
+
+  const resendBeneficiaryOTP = async (phone) => {
+    try {
+      const response = await axios.post('/api/beneficiaries/resend-otp', { phone });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to resend OTP' 
+      };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -133,7 +157,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     fetchUserProfile,
-    initiateBeneficiary
+    initiateBeneficiary,
+    verifyBeneficiaryOTP,
+    resendBeneficiaryOTP
   };
 
   return (

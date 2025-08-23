@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Form, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
+import { Container, Card, Form, Button, Alert, Spinner, Row, Col, Table, Badge } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { referenceAPI } from '../services/api';
@@ -8,7 +8,7 @@ import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForC
 const Profile = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, logout, fetchUserProfile } = useAuth();
   
   const isFirstTime = location.state?.isFirstTime || false;
   
@@ -33,6 +33,7 @@ const Profile = () => {
 
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [casteOptions, setCasteOptions] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +41,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadReferenceData();
+    loadAnalytics();
   }, []);
 
   useEffect(() => {
@@ -86,6 +88,17 @@ const Profile = () => {
     }
   }, [formData.religion, formData.category]);
 
+  const loadAnalytics = async () => {
+    try {
+      const response = await fetchUserProfile();
+      if (response && response.analytics) {
+        setAnalytics(response.analytics);
+      }
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+    }
+  };
+
   const loadReferenceData = async () => {
     try {
       // Load PCs for Bihar since state is hardcoded
@@ -104,8 +117,7 @@ const Profile = () => {
         }));
       }
     } catch (error) {
-      console.error('Error loading reference data:', error);
-      setError('Failed to load form data');
+      console.error('Failed to load reference data:', error);
     }
   };
 
@@ -114,17 +126,10 @@ const Profile = () => {
       const response = await referenceAPI.getPCs();
       setReferenceData(prev => ({
         ...prev,
-        pcs: response.data,
-        acs: [] // Clear ACs when loading PCs
-      }));
-      // Reset PC and AC when loading fresh PCs
-      setFormData(prev => ({
-        ...prev,
-        pc: '',
-        ac: ''
+        pcs: response.data
       }));
     } catch (error) {
-      console.error('Error loading PCs:', error);
+      console.error('Failed to load PCs:', error);
     }
   };
 
@@ -135,13 +140,8 @@ const Profile = () => {
         ...prev,
         acs: response.data
       }));
-      // Reset AC when PC changes
-      setFormData(prev => ({
-        ...prev,
-        ac: ''
-      }));
     } catch (error) {
-      console.error('Error loading ACs:', error);
+      console.error('Failed to load ACs:', error);
     }
   };
 
@@ -153,50 +153,26 @@ const Profile = () => {
     }));
   };
 
-  const validateForm = () => {
-    const errors = [];
-    
-    if (!formData.name.trim()) errors.push('Name is required');
-    if (!formData.gender) errors.push('Gender is required');
-    if (!formData.religion) errors.push('Religion is required');
-    if (!formData.category) errors.push('Category is required');
-    if (!formData.caste.trim()) errors.push('Caste is required');
-    if (!formData.pc) errors.push('Parliamentary Constituency is required');
-    if (!formData.ac) errors.push('Assembly Constituency is required');
-    
-    if (formData.role === 'volunteer' && !formData.leaderPhone.trim()) {
-      errors.push('Leader phone is required for volunteers');
-    }
-    
-    if (formData.leaderPhone && !/^\d{10}$/.test(formData.leaderPhone)) {
-      errors.push('Leader phone must be 10 digits');
-    }
-    
-    return errors;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const validationErrors = validateForm();
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join(', '));
-      return;
-    }
-    
     setLoading(true);
     setError('');
     setSuccess('');
-    
+
     try {
-      await updateProfile(formData);
-      setSuccess('Profile updated successfully!');
-      
-      // Navigate to home after successful profile completion
-      setTimeout(() => {
-        navigate('/home');
-      }, 1500);
-      
+      const result = await updateProfile(formData);
+      if (result.success) {
+        setSuccess('Profile updated successfully!');
+        // Reload analytics after profile update
+        await loadAnalytics();
+        if (isFirstTime) {
+          setTimeout(() => {
+            navigate('/home');
+          }, 2000);
+        }
+      } else {
+        setError(result.message || 'Failed to update profile');
+      }
     } catch (error) {
       console.error('Profile update error:', error);
       setError(error.response?.data?.message || 'Failed to update profile');
@@ -213,7 +189,86 @@ const Profile = () => {
   return (
     <Container className="py-4">
       <Row className="justify-content-center">
-        <Col md={8} lg={6}>
+        <Col md={8} lg={10}>
+          {/* Analytics Section - Show only if not first time and analytics available */}
+          {!isFirstTime && analytics && (
+            <Card className="mb-4">
+              <Card.Header className="bg-info text-white">
+                <h5 className="mb-0">📊 Analytics Dashboard</h5>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={4}>
+                    <Card className="text-center border-primary">
+                      <Card.Body>
+                        <h3 className="text-primary">{analytics.formsFilledByUser}</h3>
+                        <p className="mb-0">Forms Filled by You</p>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                  
+                  {(user?.role === 'leader' || user?.role === 'admin') && (
+                    <Col md={4}>
+                      <Card className="text-center border-success">
+                        <Card.Body>
+                          <h3 className="text-success">{analytics.formsFilledByVolunteers}</h3>
+                          <p className="mb-0">Forms by Your Volunteers</p>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  )}
+                  
+                  <Col md={4}>
+                    <Card className="text-center border-warning">
+                      <Card.Body>
+                        <h3 className="text-warning">{analytics.topVolunteers.length}</h3>
+                        <p className="mb-0">Active Volunteers</p>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+
+                {/* Top 10 Volunteers Table */}
+                {analytics.topVolunteers.length > 0 && (
+                  <div className="mt-4">
+                    <h6>🏆 Top 10 Volunteers</h6>
+                    <Table striped bordered hover responsive>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Name</th>
+                          <th>Mobile</th>
+                          <th>Forms Filled</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.topVolunteers.map((volunteer, index) => (
+                          <tr key={index}>
+                            <td>
+                              {index < 3 ? (
+                                <Badge bg={index === 0 ? 'warning' : index === 1 ? 'secondary' : 'dark'}>
+                                  {index + 1}
+                                </Badge>
+                              ) : (
+                                index + 1
+                              )}
+                            </td>
+                            <td>{volunteer.name}</td>
+                            <td>{volunteer.mobile}</td>
+                            <td>
+                              <Badge bg="primary">{volunteer.formsCount}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
+          )}
+
+          {/* Profile Form */}
           <Card>
             <Card.Header className="bg-primary text-white">
               <h4 className="mb-0">
@@ -317,7 +372,7 @@ const Profile = () => {
                     </Form.Group>
                   </Col>
                   
-                  <Col md={8}>
+                  <Col md={4}>
                     <Form.Group className="mb-3">
                       <Form.Label>जाति *</Form.Label>
                       <Form.Select
@@ -336,12 +391,23 @@ const Profile = () => {
                       </Form.Select>
                     </Form.Group>
                   </Col>
+                  
+                  <Col md={4}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>राज्य</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value="Bihar"
+                        disabled
+                      />
+                    </Form.Group>
+                  </Col>
                 </Row>
 
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>संसदीय क्षेत्र (बिहार) *</Form.Label>
+                      <Form.Label>संसदीय क्षेत्र *</Form.Label>
                       <Form.Select
                         name="pc"
                         value={formData.pc}

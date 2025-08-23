@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.voteradhikarpatra.com'; // Update this to your actual backend URL
+// const API_BASE_URL = 'http://localhost:8080'; // Changed to localhost for testing
+const API_BASE_URL = 'https://api.voteradhikarpatra.com';
+
 
 // Create axios instance
 const api = axios.create({

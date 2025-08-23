@@ -15,15 +15,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Set up axios defaults for localhost
-  const API_BASE_URL = 'https://api.voteradhikarpatra.com'; // Change this to your backend URL
+  // Set up axios defaults for production
+  const API_BASE_URL = 'https://api.voteradhikarpatra.com'; // Production backend URL
   axios.defaults.baseURL = API_BASE_URL;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Verify token and get user data
+      // Always try to fetch user profile - don't check token expiration
       fetchUserProfile();
     } else {
       setLoading(false);
@@ -34,17 +34,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.get('/api/auth/profile');
       setUser(response.data.user);
+      
+      // Return the full response including analytics for components that need it
+      return response.data;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       
-      // Only logout if it's an authentication error (401) or token-related error
-      if (error.response?.status === 401 || error.response?.data?.message?.includes('token')) {
-        console.log('Authentication error detected, logging out user');
-        logout();
-      } else {
-        // For other errors, just log them but don't logout
-        console.log('Profile fetch failed but keeping user logged in:', error.response?.data?.message);
-      }
+      // Don't automatically logout on any error - keep user logged in
+      // Only log the error for debugging
+      console.log('Profile fetch failed but keeping user logged in:', error.response?.data?.message || error.message);
+      
+      throw error; // Re-throw for components to handle
     } finally {
       setLoading(false);
     }
@@ -55,12 +55,19 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/auth/login', { phone, otp });
       const { token, user, isNewUser } = response.data;
       
+      // Validate token before storing
+      if (!token) {
+        throw new Error('No token received from server');
+      }
+      
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       
+      console.log('User logged in successfully:', user.phone);
       return { success: true, user, isNewUser };
     } catch (error) {
+      console.error('Login error:', error);
       return { 
         success: false, 
         message: error.response?.data?.message || 'Login failed' 
@@ -93,12 +100,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Profile update error:', error);
       
-      // Don't logout on profile update errors unless it's an auth error
-      if (error.response?.status === 401) {
-        console.log('Authentication error during profile update, logging out');
-        logout();
-      }
-      
+      // Don't logout on any error - just return the error
       return { 
         success: false, 
         message: error.response?.data?.message || 'Profile update failed' 
@@ -106,18 +108,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Manual logout only - user must click logout button
   const logout = () => {
+    console.log('User manually logged out');
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
 
-  // Beneficiary functions
+  // Beneficiary functions - no automatic logout on any error
   const initiateBeneficiary = async (beneficiaryData) => {
     try {
       const response = await axios.post('/api/beneficiaries/initiate', beneficiaryData);
       return { success: true, data: response.data };
     } catch (error) {
+      // Never logout automatically - just return the error
       return { 
         success: false, 
         message: error.response?.data?.message || 'Failed to initiate beneficiary registration' 
@@ -130,6 +135,7 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/api/beneficiaries/verify-otp', { phone, otp });
       return { success: true, data: response.data };
     } catch (error) {
+      // Never logout automatically - just return the error
       return { 
         success: false, 
         message: error.response?.data?.message || 'OTP verification failed' 

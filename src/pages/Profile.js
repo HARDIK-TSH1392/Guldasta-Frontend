@@ -88,6 +88,25 @@ const Profile = () => {
     }
   }, [formData.religion, formData.category]);
 
+  // Auto-populate leader phone when role changes
+  useEffect(() => {
+    if (formData.role === 'volunteer' && user?.phone && !formData.leaderPhone) {
+      // If changing from leader to volunteer, auto-populate with own phone
+      if (user.role === 'leader') {
+        setFormData(prev => ({
+          ...prev,
+          leaderPhone: user.phone
+        }));
+      }
+    } else if (formData.role === 'leader') {
+      // If changing to leader, clear leader phone
+      setFormData(prev => ({
+        ...prev,
+        leaderPhone: ''
+      }));
+    }
+  }, [formData.role, user?.phone, user?.role]);
+
   const loadAnalytics = async () => {
     try {
       const response = await fetchUserProfile();
@@ -192,80 +211,147 @@ const Profile = () => {
         <Col md={8} lg={10}>
           {/* Analytics Section - Show only if not first time and analytics available */}
           {!isFirstTime && analytics && (
-            <Card className="mb-4">
-              <Card.Header className="bg-info text-white">
-                <h5 className="mb-0">📊 Analytics Dashboard</h5>
-              </Card.Header>
-              <Card.Body>
-                <Row>
-                  <Col md={4}>
-                    <Card className="text-center border-primary">
-                      <Card.Body>
+            <>
+              <Card className="mb-4">
+                <Card.Header className="bg-info text-white">
+                  <h5 className="mb-0">📊 Analytics Dashboard</h5>
+                </Card.Header>
+                <Card.Body>
+                  <Row>
+                    <Col md={4}>
+                      <div className="text-center p-3 bg-light rounded">
                         <h3 className="text-primary">{analytics.formsFilledByUser}</h3>
                         <p className="mb-0">Forms Filled by You</p>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                  
-                  {(user?.role === 'leader' || user?.role === 'admin') && (
-                    <Col md={4}>
-                      <Card className="text-center border-success">
-                        <Card.Body>
+                      </div>
+                    </Col>
+                    {(user?.role === 'leader' || user?.role === 'admin') && (
+                      <Col md={4}>
+                        <div className="text-center p-3 bg-light rounded">
                           <h3 className="text-success">{analytics.formsFilledByVolunteers}</h3>
                           <p className="mb-0">Forms by Your Volunteers</p>
-                        </Card.Body>
-                      </Card>
+                        </div>
+                      </Col>
+                    )}
+                    <Col md={4}>
+                      <div className="text-center p-3 bg-light rounded">
+                        <h3 className="text-info">{analytics.formsFilledByUser + analytics.formsFilledByVolunteers}</h3>
+                        <p className="mb-0">Total Forms</p>
+                      </div>
                     </Col>
-                  )}
-                  
-                  <Col md={4}>
-                    <Card className="text-center border-warning">
-                      <Card.Body>
-                        <h3 className="text-warning">{analytics.topVolunteers.length}</h3>
-                        <p className="mb-0">Active Volunteers</p>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
+                  </Row>
 
-                {/* Top 10 Volunteers Table */}
-                {analytics.topVolunteers.length > 0 && (
-                  <div className="mt-4">
-                    <h6>🏆 Top 10 Volunteers</h6>
-                    <Table striped bordered hover responsive>
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Name</th>
-                          <th>Mobile</th>
-                          <th>Forms Filled</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {analytics.topVolunteers.map((volunteer, index) => (
-                          <tr key={index}>
-                            <td>
-                              {index < 3 ? (
-                                <Badge bg={index === 0 ? 'warning' : index === 1 ? 'secondary' : 'dark'}>
-                                  {index + 1}
-                                </Badge>
-                              ) : (
-                                index + 1
-                              )}
-                            </td>
-                            <td>{volunteer.name}</td>
-                            <td>{volunteer.mobile}</td>
-                            <td>
-                              <Badge bg="primary">{volunteer.formsCount}</Badge>
-                            </td>
+                  {/* Top Volunteers Table */}
+                  {analytics.topVolunteers && analytics.topVolunteers.length > 0 && (
+                    <div className="mt-4">
+                      <h6 className="mb-3">🏆 Top Volunteers</h6>
+                      <Table striped bordered hover responsive size="sm">
+                        <thead className="table-dark">
+                          <tr>
+                            <th>Rank</th>
+                            <th>Name</th>
+                            <th>Mobile</th>
+                            <th>Forms</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-                )}
-              </Card.Body>
-            </Card>
+                        </thead>
+                        <tbody>
+                          {analytics.topVolunteers.map((volunteer, index) => (
+                            <tr key={index}>
+                              <td>
+                                {index < 3 ? (
+                                  <Badge bg={index === 0 ? 'warning' : index === 1 ? 'secondary' : 'success'}>
+                                    {index + 1}
+                                  </Badge>
+                                ) : (
+                                  index + 1
+                                )}
+                              </td>
+                              <td>{volunteer.name}</td>
+                              <td>{volunteer.mobile}</td>
+                              <td>
+                                <Badge bg="primary">{volunteer.formsCount}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
+
+              {/* Volunteers Management - Only for Leaders */}
+              {user?.role === 'leader' && analytics.volunteersList && (
+                <Card className="mb-4">
+                  <Card.Header className="bg-success text-white">
+                    <h5 className="mb-0">👥 Your Volunteers ({analytics.volunteersList.length})</h5>
+                  </Card.Header>
+                  <Card.Body>
+                    {analytics.volunteersList.length === 0 ? (
+                      <Alert variant="info">
+                        <strong>No volunteers registered yet!</strong><br/>
+                        Share your phone number ({user.phone}) with volunteers so they can register under you.
+                      </Alert>
+                    ) : (
+                      <Table striped bordered hover responsive>
+                        <thead className="table-success">
+                          <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Forms Filled</th>
+                            <th>Last Activity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics.volunteersList.map((volunteer, index) => (
+                            <tr key={volunteer.id || index}>
+                              <td>{index + 1}</td>
+                              <td>
+                                {volunteer.name}
+                                {volunteer.source === 'forms_only' && (
+                                  <Badge bg="warning" className="ms-2">Forms Only</Badge>
+                                )}
+                              </td>
+                              <td>{volunteer.phone}</td>
+                              <td>
+                                {volunteer.profileCompleted ? (
+                                  <Badge bg="success">Profile Complete</Badge>
+                                ) : (
+                                  <Badge bg="warning">Profile Incomplete</Badge>
+                                )}
+                              </td>
+                              <td>
+                                <Badge bg={volunteer.formsCount > 0 ? 'primary' : 'secondary'}>
+                                  {volunteer.formsCount}
+                                </Badge>
+                              </td>
+                              <td>
+                                {volunteer.lastFormDate ? (
+                                  <small>{new Date(volunteer.lastFormDate).toLocaleDateString()}</small>
+                                ) : volunteer.registeredAt ? (
+                                  <small>Registered: {new Date(volunteer.registeredAt).toLocaleDateString()}</small>
+                                ) : (
+                                  <small className="text-muted">No activity</small>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    )}
+                    
+                    <Alert variant="light" className="mt-3">
+                      <strong>💡 How volunteers can register under you:</strong><br/>
+                      1. They should signup/login to the app<br/>
+                      2. In their profile, they should select "Volunteer" role<br/>
+                      3. They should enter your phone number: <strong>{user.phone}</strong><br/>
+                      4. They will appear in this list once they complete their profile
+                    </Alert>
+                  </Card.Body>
+                </Card>
+              )}
+            </>
           )}
 
           {/* Profile Form */}
@@ -318,16 +404,19 @@ const Profile = () => {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>भूमिका</Form.Label>
+                      <Form.Label>भूमिका *</Form.Label>
                       <Form.Select
                         name="role"
                         value={formData.role}
                         onChange={handleChange}
-                        disabled={!isFirstTime}
+                        required
                       >
-                        <option value="volunteer">Volunteer</option>
-                        <option value="leader">Leader</option>
+                        <option value="volunteer">Volunteer (कार्यकर्ता)</option>
+                        <option value="leader">Leader (नेता)</option>
                       </Form.Select>
+                      <Form.Text className="text-muted">
+                        You can change your role anytime. If changing from Leader to Volunteer, your phone will be auto-filled as leader phone.
+                      </Form.Text>
                     </Form.Group>
                   </Col>
                   
@@ -352,7 +441,7 @@ const Profile = () => {
                 </Row>
 
                 <Row>
-                  <Col md={4}>
+                  <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>श्रेणी *</Form.Label>
                       <Form.Select
@@ -372,7 +461,7 @@ const Profile = () => {
                     </Form.Group>
                   </Col>
                   
-                  <Col md={4}>
+                  <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>जाति *</Form.Label>
                       <Form.Select
@@ -391,17 +480,6 @@ const Profile = () => {
                       </Form.Select>
                     </Form.Group>
                   </Col>
-                  
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>राज्य</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value="Bihar"
-                        disabled
-                      />
-                    </Form.Group>
-                  </Col>
                 </Row>
 
                 <Row>
@@ -414,9 +492,9 @@ const Profile = () => {
                         onChange={handleChange}
                         required
                       >
-                        <option value="">Select PC</option>
+                        <option value="">Select Parliamentary Constituency</option>
                         {referenceData.pcs.map(pc => (
-                          <option key={pc._id} value={pc.name}>
+                          <option key={pc.code} value={pc.code}>
                             {pc.name}
                           </option>
                         ))}
@@ -434,9 +512,9 @@ const Profile = () => {
                         required
                         disabled={!formData.pc}
                       >
-                        <option value="">Select AC</option>
+                        <option value="">Select Assembly Constituency</option>
                         {referenceData.acs.map(ac => (
-                          <option key={ac._id} value={ac.name}>
+                          <option key={ac.code} value={ac.code}>
                             {ac.name}
                           </option>
                         ))}
@@ -459,6 +537,12 @@ const Profile = () => {
                           maxLength="10"
                           required
                         />
+                        <Form.Text className="text-muted">
+                          {user?.role === 'leader' && formData.leaderPhone === user?.phone ? 
+                            '✅ Auto-filled with your phone number' : 
+                            'Enter your leader\'s 10-digit phone number'
+                          }
+                        </Form.Text>
                       </Form.Group>
                     </Col>
                   )}
@@ -480,8 +564,15 @@ const Profile = () => {
                   >
                     {loading ? (
                       <>
-                        <Spinner size="sm" className="me-2" />
-                        {isFirstTime ? 'Completing...' : 'Updating...'}
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
+                        Updating...
                       </>
                     ) : (
                       isFirstTime ? 'Complete Profile' : 'Update Profile'

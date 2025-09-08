@@ -155,6 +155,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const registerBeneficiary = async (beneficiaryData) => {
+    try {
+      const response = await axios.post('/api/beneficiaries/register', beneficiaryData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to register beneficiary' 
+      };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -165,7 +177,8 @@ export const AuthProvider = ({ children }) => {
     fetchUserProfile,
     initiateBeneficiary,
     verifyBeneficiaryOTP,
-    resendBeneficiaryOTP
+    resendBeneficiaryOTP,
+    registerBeneficiary
   };
 
   return (

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
 
 const Schemes = () => {
-  const { user, registerBeneficiary, getLeaders } = useAuth();
+  const { user, registerBeneficiary } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -17,53 +17,23 @@ const Schemes = () => {
     voterIdHelp: false,
     congressWork: false,
     leaderMobile: user?.leaderPhone || '',
-    leaderSelection: 'existing' // 'existing' or 'new'
+    useProfileLeader: true // true = use profile leader, false = enter new
   });
 
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [casteOptions, setCasteOptions] = useState([]);
-  const [leaders, setLeaders] = useState([]);
-  const [selectedLeader, setSelectedLeader] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
 
-  // Load leaders on component mount
-  useEffect(() => {
-    loadLeaders();
-  }, []);
-
-  const loadLeaders = async () => {
-    try {
-      const response = await getLeaders();
-      if (response.success) {
-        setLeaders(response.data.leaders);
-        
-        // Auto-select current user's leader if available
-        if (user?.leaderPhone) {
-          const currentLeader = response.data.leaders.find(leader => leader.phone === user.leaderPhone);
-          if (currentLeader) {
-            setSelectedLeader(currentLeader.phone);
-            setFormData(prev => ({
-              ...prev,
-              leaderMobile: currentLeader.phone
-            }));
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load leaders:', error);
-    }
-  };
-
   // Update leaderMobile when user data is available
   useEffect(() => {
     if (user?.leaderPhone) {
       setFormData(prev => ({
         ...prev,
-        leaderMobile: user.leaderPhone
+        leaderMobile: prev.useProfileLeader ? user.leaderPhone : prev.leaderMobile
       }));
     }
   }, [user]);
@@ -110,19 +80,13 @@ const Schemes = () => {
         ...prev,
         [name]: checked
       }));
-    } else if (name === 'leaderSelection') {
+    } else if (name === 'useProfileLeader') {
       // Handle leader selection type change
+      const useProfile = value === 'true';
       setFormData(prev => ({
         ...prev,
-        [name]: value,
-        leaderMobile: value === 'existing' ? selectedLeader : ''
-      }));
-    } else if (name === 'selectedLeader') {
-      // Handle leader dropdown selection
-      setSelectedLeader(value);
-      setFormData(prev => ({
-        ...prev,
-        leaderMobile: value
+        useProfileLeader: useProfile,
+        leaderMobile: useProfile ? (user?.leaderPhone || '') : ''
       }));
     } else {
       setFormData(prev => ({
@@ -191,11 +155,10 @@ const Schemes = () => {
           voterIdHelp: false,
           congressWork: false,
           leaderMobile: user?.leaderPhone || '',
-          leaderSelection: 'existing'
+          useProfileLeader: true
         });
         
-        // Reset selections
-        setSelectedLeader(user?.leaderPhone || '');
+        // Reset category and caste options
         setCategoryOptions([]);
         setCasteOptions([]);
       } else {
@@ -307,43 +270,33 @@ const Schemes = () => {
                           <Form.Check
                             inline
                             type="radio"
-                            name="leaderSelection"
-                            value="existing"
-                            checked={formData.leaderSelection === 'existing'}
+                            name="useProfileLeader"
+                            value="true"
+                            checked={formData.useProfileLeader === true}
                             onChange={handleInputChange}
-                            label="मौजूदा नेता चुनें"
+                            label="मेरे प्रोफाइल का नेता"
                           />
                           <Form.Check
                             inline
                             type="radio"
-                            name="leaderSelection"
-                            value="new"
-                            checked={formData.leaderSelection === 'new'}
+                            name="useProfileLeader"
+                            value="false"
+                            checked={formData.useProfileLeader === false}
                             onChange={handleInputChange}
                             label="नया नंबर डालें"
                           />
                         </div>
 
-                        {/* Existing Leader Dropdown */}
-                        {formData.leaderSelection === 'existing' && (
-                          <Form.Select
-                            name="selectedLeader"
-                            value={selectedLeader}
-                            onChange={handleInputChange}
-                            className="form-select-custom"
-                            required
-                          >
-                            <option value="">Select Leader</option>
-                            {leaders.map(leader => (
-                              <option key={leader.id} value={leader.phone}>
-                                {leader.displayName} - {leader.pc}/{leader.ac}
-                              </option>
-                            ))}
-                          </Form.Select>
-                        )}
-
-                        {/* New Leader Phone Input */}
-                        {formData.leaderSelection === 'new' && (
+                        {/* Show profile leader or input field */}
+                        {formData.useProfileLeader ? (
+                          <Form.Control
+                            type="tel"
+                            value={user?.leaderPhone || 'No leader in profile'}
+                            className="form-control-custom"
+                            readOnly
+                            style={{ backgroundColor: '#f8f9fa' }}
+                          />
+                        ) : (
                           <Form.Control
                             type="tel"
                             name="leaderMobile"
@@ -357,8 +310,8 @@ const Schemes = () => {
                         )}
 
                         <Form.Text className="text-muted">
-                          {formData.leaderSelection === 'existing' 
-                            ? 'Choose from registered leaders' 
+                          {formData.useProfileLeader 
+                            ? 'Using leader from your profile' 
                             : 'Enter 10-digit phone number'
                           }
                         </Form.Text>

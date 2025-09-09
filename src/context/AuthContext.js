@@ -179,6 +179,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyMissCall = async (phone) => {
+    try {
+      const response = await axios.post('/api/beneficiaries/verify-miss-call', { phone });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to verify miss call' 
+      };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -191,7 +203,8 @@ export const AuthProvider = ({ children }) => {
     verifyBeneficiaryOTP,
     resendBeneficiaryOTP,
     registerBeneficiary,
-    getLeaders
+    getLeaders,
+    verifyMissCall
   };
 
   return (

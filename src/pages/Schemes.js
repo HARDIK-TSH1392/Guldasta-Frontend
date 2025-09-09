@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { religionOptions, genderOptions, getCategoriesForReligion, getCastesForCategory } from '../utils/religionCasteData';
 
 const Schemes = () => {
-  const { user, registerBeneficiary } = useAuth();
+  const { user, registerBeneficiary, verifyMissCall } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +27,11 @@ const Schemes = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
+
+  // Miss call verification state
+  const [missCallVerified, setMissCallVerified] = useState(false);
+  const [verifyingMissCall, setVerifyingMissCall] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState('');
 
   // Update leaderMobile when user data is available
   useEffect(() => {
@@ -88,11 +93,46 @@ const Schemes = () => {
         useProfileLeader: useProfile,
         leaderMobile: useProfile ? (user?.leaderPhone || '') : ''
       }));
+    } else if (name === 'phone') {
+      // Reset miss call verification when phone number changes
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      setMissCallVerified(false);
+      setVerificationMessage('');
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
+    }
+  };
+
+  const handleMissCallVerification = async () => {
+    if (!formData.phone || !/^[6-9]\d{9}$/.test(formData.phone)) {
+      setVerificationMessage('Please enter a valid 10-digit phone number first');
+      return;
+    }
+
+    setVerifyingMissCall(true);
+    setVerificationMessage('');
+
+    try {
+      const response = await verifyMissCall(formData.phone);
+      
+      if (response.success) {
+        setMissCallVerified(response.data.verified);
+        setVerificationMessage(response.data.message);
+      } else {
+        setMissCallVerified(false);
+        setVerificationMessage(response.message || 'Verification failed');
+      }
+    } catch (error) {
+      setMissCallVerified(false);
+      setVerificationMessage('Failed to verify miss call. Please try again.');
+    } finally {
+      setVerifyingMissCall(false);
     }
   };
 
@@ -132,6 +172,11 @@ const Schemes = () => {
       return;
     }
 
+    if (!missCallVerified) {
+      setError('Please verify the miss call first before submitting the form');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -157,6 +202,10 @@ const Schemes = () => {
           leaderMobile: user?.leaderPhone || '',
           useProfileLeader: true
         });
+        
+        // Reset verification state
+        setMissCallVerified(false);
+        setVerificationMessage('');
         
         // Reset category and caste options
         setCategoryOptions([]);
@@ -259,6 +308,35 @@ const Schemes = () => {
                           maxLength="10"
                           required
                         />
+                        
+                        {/* Miss Call Verification Button */}
+                        <div className="mt-2">
+                          <Button
+                            type="button"
+                            variant={missCallVerified ? "success" : "warning"}
+                            size="sm"
+                            onClick={handleMissCallVerification}
+                            disabled={verifyingMissCall || !formData.phone || formData.phone.length !== 10}
+                            className="me-2"
+                          >
+                            {verifyingMissCall ? (
+                              <>
+                                <Spinner animation="border" size="sm" className="me-1" />
+                                Verifying...
+                              </>
+                            ) : missCallVerified ? (
+                              '✅ Miss Call Verified'
+                            ) : (
+                              '📞 Verify Miss Call'
+                            )}
+                          </Button>
+                          
+                          {verificationMessage && (
+                            <div className={`mt-1 small ${missCallVerified ? 'text-success' : 'text-danger'}`}>
+                              {verificationMessage}
+                            </div>
+                          )}
+                        </div>
                       </Form.Group>
                     </Col>
                     <Col md={6}>
@@ -412,13 +490,15 @@ const Schemes = () => {
                   <Button
                     type="submit"
                     className="btn-primary-custom w-100"
-                    disabled={loading}
+                    disabled={loading || !missCallVerified}
                   >
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
                         Submitting...
                       </>
+                    ) : !missCallVerified ? (
+                      '📞 Verify Miss Call First'
                     ) : (
                       'Submit Registration'
                     )}

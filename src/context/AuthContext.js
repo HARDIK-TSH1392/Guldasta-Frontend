@@ -167,6 +167,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const getLeaders = async () => {
+    try {
+      const response = await axios.get('/api/beneficiaries/leaders');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to fetch leaders' 
+      };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -178,7 +190,8 @@ export const AuthProvider = ({ children }) => {
     initiateBeneficiary,
     verifyBeneficiaryOTP,
     resendBeneficiaryOTP,
-    registerBeneficiary
+    registerBeneficiary,
+    getLeaders
   };
 
   return (

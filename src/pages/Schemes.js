@@ -143,50 +143,51 @@ const Schemes = () => {
 
     // Validation
     if (!formData.name.trim()) {
-      setError('Name is required');
+      setError('नाम आवश्यक है');
       return;
     }
 
     if (!formData.age || formData.age < 1 || formData.age > 100) {
-      setError('Please enter a valid age between 1 and 100');
+      setError('कृपया 1 से 100 के बीच वैध आयु दर्ज करें');
       return;
     }
 
     if (!formData.gender) {
-      setError('Please select gender');
+      setError('कृपया लिंग चुनें');
       return;
     }
 
     if (!/^[6-9]\d{9}$/.test(formData.phone)) {
-      setError('Please enter a valid 10-digit phone number');
+      setError('कृपया वैध 10 अंकों का फोन नंबर दर्ज करें');
       return;
     }
 
     if (!formData.leaderMobile || !/^[6-9]\d{9}$/.test(formData.leaderMobile)) {
-      setError('Leader mobile number is missing or invalid. Please update your profile.');
+      setError('नेता का मोबाइल नंबर गुम है या अमान्य है। कृपया अपनी प्रोफ़ाइल अपडेट करें।');
       return;
     }
 
     if (!formData.religion || !formData.category || !formData.caste) {
-      setError('Please select religion, category, and caste');
+      setError('कृपया धर्म, श्रेणी और जाति चुनें');
       return;
     }
 
-    if (!missCallVerified) {
-      setError('Please verify the miss call first before submitting the form');
-      return;
-    }
+    // TEMPORARILY DISABLED: Miss call verification
+    // if (!missCallVerified) {
+    //   setError('कृपया फॉर्म जमा करने से पहले मिस कॉल सत्यापित करें');
+    //   return;
+    // }
 
     setLoading(true);
 
     try {
-      // Direct registration without OTP
+      // Direct registration without miss call verification
       const response = await registerBeneficiary(formData);
       
       if (response.success) {
         // Registration successful
         setRegistrationNumber(response.data.registrationNumber);
-        setSuccess(`Beneficiary registered successfully! Registration Number: ${response.data.registrationNumber}`);
+        setSuccess(`लाभार्थी सफलतापूर्वक पंजीकृत हो गया! पंजीकरण संख्या: ${response.data.registrationNumber}`);
         
         // Reset form
         setFormData({
@@ -211,10 +212,10 @@ const Schemes = () => {
         setCategoryOptions([]);
         setCasteOptions([]);
       } else {
-        setError(response.message || 'Failed to register beneficiary');
+        setError(response.message || 'लाभार्थी पंजीकरण में विफल');
       }
     } catch (error) {
-      setError('Failed to submit form. Please try again.');
+      setError('फॉर्म जमा करने में विफल। कृपया पुनः प्रयास करें।');
     } finally {
       setLoading(false);
     }
@@ -309,8 +310,8 @@ const Schemes = () => {
                           required
                         />
                         
-                        {/* Miss Call Verification Button */}
-                        <div className="mt-2">
+                        {/* TEMPORARILY HIDDEN: Miss Call Verification Button */}
+                        {/* <div className="mt-2">
                           <Button
                             type="button"
                             variant={missCallVerified ? "success" : "warning"}
@@ -336,7 +337,7 @@ const Schemes = () => {
                               {verificationMessage}
                             </div>
                           )}
-                        </div>
+                        </div> */}
                       </Form.Group>
                     </Col>
                     <Col md={6}>
@@ -490,17 +491,15 @@ const Schemes = () => {
                   <Button
                     type="submit"
                     className="btn-primary-custom w-100"
-                    disabled={loading || !missCallVerified}
+                    disabled={loading}
                   >
                     {loading ? (
                       <>
                         <Spinner animation="border" size="sm" className="me-2" />
-                        Submitting...
+                        जमा कर रहे हैं...
                       </>
-                    ) : !missCallVerified ? (
-                      '📞 Verify Miss Call First'
                     ) : (
-                      'Submit Registration'
+                      'पंजीकरण जमा करें'
                     )}
                   </Button>
                 </Form>
